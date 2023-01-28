@@ -125,8 +125,8 @@ static void knob_tick(const struct device *dev)
 	case KNOB_ENCODER: {
 		float dp = knob_get_position(dev) - data->last_angle;
 		float rpp = data->encoder_rpp;
-		float rpp_4 = rpp / 4.0f;
-		float rpp_2 = rpp / 2.0f;
+		float rpp_4 = rpp / 8.0f;
+		float rpp_2 = rpp / 4.0f;
 		if (dp == 0) {
 			mc->target = data->last_angle;
 		} else if (dp > 0) {
