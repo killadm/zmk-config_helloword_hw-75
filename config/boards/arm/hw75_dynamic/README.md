@@ -16,7 +16,7 @@ HW-75 Dynamic
 - [x] 旋钮力反馈 (FOC)
 - [x] 墨水屏
 - [x] 上位机
-- [ ] 键盘联动
+- [x] 键盘联动
 
 ## 烧录
 
@@ -31,7 +31,11 @@ HW-75 Dynamic
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y python3-pip protobuf-compiler
+sudo apt-get install -y python3-pip protobuf-compiler curl
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo pip install -U fonttools
+sudo npm install -g lv_font_conv
 ```
 
 ### 编译
