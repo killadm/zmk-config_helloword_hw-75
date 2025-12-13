@@ -22,6 +22,7 @@ enum Action {
 	RGB_GET_INDICATOR = 10;
 	RGB_SET_INDICATOR = 11;
 	EINK_SET_IMAGE = 7;
+	SIMULATE_INPUT = 12;
 }
 
 message MessageH2D
@@ -38,6 +39,7 @@ message MessageH2D
 		RgbState rgb_state = 7;
 		RgbIndicator rgb_indicator = 8;
 		EinkImage eink_image = 5;
+		SimulateInput simulate_input = 9;
 	}
 }
 
@@ -54,11 +56,18 @@ message MessageD2H
 		RgbState rgb_state = 6;
 		RgbIndicator rgb_indicator = 9;
 		EinkImage eink_image = 7;
+		SimulateInput simulate_input = 10;
 	}
 }
 
 message Nop
 {
+}
+
+message SimulateInput
+{
+	required uint32 position = 1;
+	required bool pressed = 3;
 }
 
 message Version
