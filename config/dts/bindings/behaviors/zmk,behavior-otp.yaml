@@ -1,0 +1,8 @@
+# Copyright (c) 2024
+# SPDX-License-Identifier: MIT
+
+description: OTP (One-Time Password) behavior
+
+compatible: "zmk,behavior-otp"
+
+include: zero_param.yaml
