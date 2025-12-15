@@ -21,6 +21,7 @@ LOG_MODULE_DECLARE(usb_comm, CONFIG_HW75_USB_COMM_LOG_LEVEL);
 #include "usb_comm.pb.h"
 
 #include "handler/handler.h"
+#include "../otp/totp.h"
 
 static struct k_sem usb_comm_sem;
 
@@ -177,7 +178,27 @@ static bool handle_simulate_input(const usb_comm_MessageH2D *h2d, usb_comm_Messa
 	return false;
 }
 
+static bool handle_otp_set_time(const usb_comm_MessageH2D *h2d, usb_comm_MessageD2H *d2h,
+				const void *bytes, uint32_t bytes_len)
+{
+	totp_set_time(h2d->payload.otp_set_time.timestamp);
+	return false;
+}
+
+static bool handle_otp_set_secret(const usb_comm_MessageH2D *h2d, usb_comm_MessageD2H *d2h,
+				  const void *bytes, uint32_t bytes_len)
+{
+	if (bytes_len > 0) {
+		totp_set_secret(bytes, bytes_len);
+	}
+	return false;
+}
+
 USB_COMM_HANDLER_DEFINE(usb_comm_Action_SIMULATE_INPUT, usb_comm_MessageD2H_nop_tag,
 			handle_simulate_input);
+USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_SET_TIME, usb_comm_MessageD2H_nop_tag,
+			handle_otp_set_time);
+USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_SET_SECRET, usb_comm_MessageD2H_nop_tag,
+			handle_otp_set_secret);
 
 SYS_INIT(usb_comm_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

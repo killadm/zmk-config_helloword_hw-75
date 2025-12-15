@@ -23,6 +23,8 @@ enum Action {
 	RGB_SET_INDICATOR = 11;
 	EINK_SET_IMAGE = 7;
 	SIMULATE_INPUT = 12;
+	OTP_SET_TIME = 13;
+	OTP_SET_SECRET = 14;
 }
 
 message MessageH2D
@@ -40,6 +42,8 @@ message MessageH2D
 		RgbIndicator rgb_indicator = 8;
 		EinkImage eink_image = 5;
 		SimulateInput simulate_input = 9;
+		OtpSetTime otp_set_time = 10;
+		OtpSetSecret otp_set_secret = 11;
 	}
 }
 
@@ -68,6 +72,16 @@ message SimulateInput
 {
 	required uint32 position = 1;
 	required bool pressed = 3;
+}
+
+message OtpSetTime
+{
+	required uint64 timestamp = 1;
+}
+
+message OtpSetSecret
+{
+	required bytes secret = 1;
 }
 
 message Version

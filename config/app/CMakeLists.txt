@@ -10,6 +10,12 @@ zephyr_library_sources_ifdef(CONFIG_HW75_INDICATOR indicator.c)
 zephyr_library_sources_ifdef(CONFIG_LVGL behaviors/behavior_lvgl_key_press.c)
 zephyr_library_sources(behaviors/behavior_mouse_wheel.c)
 
+zephyr_library_sources(
+	otp/hmac_sha1.c
+	otp/totp.c
+	behaviors/behavior_otp.c
+)
+
 add_subdirectory_ifdef(CONFIG_HW75_USB_COMM usb_comm)
 
 zephyr_library_include_directories(${ZEPHYR_LVGL_MODULE_DIR})

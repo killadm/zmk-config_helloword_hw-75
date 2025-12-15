@@ -1,0 +1,13 @@
+/*
+ * Copyright (c) 2024
+ * SPDX-License-Identifier: MIT
+ */
+
+/ {
+	behaviors {
+		/omit-if-no-ref/ otp: behavior_otp {
+			compatible = "zmk,behavior-otp";
+			#binding-cells = <0>;
+		};
+	};
+};
