@@ -7,10 +7,12 @@
 #include "hmac_sha1.h"
 
 #include <zephyr/kernel.h>
+#include <zephyr/device.h>
 #include <zephyr/settings/settings.h>
 #include <zephyr/logging/log.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 LOG_MODULE_REGISTER(otp, CONFIG_ZMK_LOG_LEVEL);
 
@@ -45,7 +47,7 @@ void totp_set_time(uint64_t timestamp)
 {
 	time_offset = timestamp;
 	last_sync_uptime = k_uptime_get();
-	LOG_INF("Time synced: %llu", timestamp);
+	LOG_INF("Time synced: %" PRIu64, timestamp);
 }
 
 static uint32_t truncate_hmac(uint8_t *hmac_result)
@@ -60,8 +62,8 @@ int totp_generate(char *buf, size_t len)
 	uint64_t now = get_current_time();
 
 	if (now < OTP_MIN_TIMESTAMP) {
-		LOG_WRN("Time not synced or too old (%llu < %llu), returning 000000", now,
-			OTP_MIN_TIMESTAMP);
+		LOG_WRN("Time not synced or too old (%" PRIu64 " < %" PRIu64 "), returning 000000",
+			now, OTP_MIN_TIMESTAMP);
 		snprintf(buf, len, "000000");
 		return 0;
 	}
