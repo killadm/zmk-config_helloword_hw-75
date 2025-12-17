@@ -1,0 +1,8 @@
+title: ZMK OTP behavior
+description: Behavior that generates TOTP codes
+compatible: "zmk,behavior-otp"
+
+properties:
+  label:
+    type: string
+    required: false

@@ -1,0 +1,14 @@
+/ {
+    behaviors {
+        otp: otp {
+            compatible = "zmk,behavior-otp";
+            label = "OTP";
+            status = "okay";
+            // 可在此添加你自定义的属性，例如密钥/时间步长等，若驱动支持：
+            // secret = "BASE32SECRET";
+            // period = <30>;
+            // digits = <6>;
+            // algo = "SHA1";
+        };
+    };
+}

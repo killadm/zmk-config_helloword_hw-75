@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#define DT_DRV_COMPAT zmk_behavior_otp
-
 #include <zephyr/device.h>
 #include <drivers/behavior.h>
 #include <zephyr/logging/log.h>
@@ -85,5 +83,29 @@ static int behavior_otp_init_wrap(const struct device *dev)
 	return behavior_otp_init(dev);
 }
 
-DEVICE_DT_INST_DEFINE(0, behavior_otp_init_wrap, NULL, NULL, NULL, POST_KERNEL,
-		      CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &behavior_otp_driver_api);
+#define BEHAVIOR_OTP_INST(inst)                                               \
+    DEVICE_DT_INST_DEFINE(inst,                                               \
+                          behavior_otp_init,                                  \
+                          NULL,                                               \
+                          &behavior_otp_data_##inst, /* 如你有按实例拆分 */  \
+                          &behavior_otp_config_##inst,                        \
+                          APPLICATION,                                        \
+                          CONFIG_KERNEL_INIT_PRIORITY_DEFAULT,                \
+                          &behavior_otp_driver_api)
+
+DT_INST_FOREACH_STATUS_OKAY(BEHAVIOR_OTP_INST)
+
+// 指定该驱动的设备树 compatible
+#define DT_DRV_COMPAT zmk_behavior_otp
+
+// 仅当设备树存在 status = "okay" 的 zmk,behavior-otp 实例时才注册设备
+#if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
+DEVICE_DT_INST_DEFINE(0,
+                      behavior_otp_init,          // 你的初始化函数
+                      NULL,                       // 可选 PM 控制/ NULL
+                      &behavior_otp_data,         // 你的 data/配置对象
+                      &behavior_otp_config,       // 你的 data/配置对象
+                      APPLICATION,
+                      CONFIG_KERNEL_INIT_PRIORITY_DEFAULT,
+                      &behavior_otp_driver_api);  // 你的 driver API
+#endif
