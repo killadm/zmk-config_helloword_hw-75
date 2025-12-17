@@ -167,11 +167,13 @@ static int usb_comm_init(const struct device *dev)
 static bool handle_simulate_input(const usb_comm_MessageH2D *h2d, usb_comm_MessageD2H *d2h,
 				  const void *bytes, uint32_t bytes_len)
 {
-	struct zmk_position_state_changed position_state_changed;
+	LOG_WRN("Simulating input: pos %d, state %d", h2d->payload.simulate_input.position, h2d->payload.simulate_input.pressed);
 
-	position_state_changed.position = h2d->payload.simulate_input.position;
-	position_state_changed.state = h2d->payload.simulate_input.pressed;
-	position_state_changed.timestamp = k_uptime_get();
+	struct zmk_position_state_changed position_state_changed = {
+		.position = h2d->payload.simulate_input.position,
+		.state = h2d->payload.simulate_input.pressed,
+		.timestamp = k_uptime_get(),
+	};
 
 	ZMK_EVENT_RAISE(new_zmk_position_state_changed(position_state_changed));
 
