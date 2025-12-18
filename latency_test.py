@@ -10,8 +10,7 @@ try:
     import usb_comm_pb2
 except ImportError:
     print("Error: usb_comm_pb2 module not found.")
-    print("Please compile the protobuf file using protoc:")
-    print("  protoc -I=config/proto --python_out=. config/proto/usb_comm.proto")
+    print("Please compile the protobuf file using protoc.")
     sys.exit(1)
 
 try:
@@ -37,19 +36,47 @@ def find_device(vid, pid, usage_page):
                 return device_dict
     return None
 
+def encode_varint(value):
+    """Encode an int as a protobuf varint."""
+    if value == 0:
+        return b'\x00'
+    out = []
+    while value > 127:
+        out.append((value & 0x7F) | 0x80)
+        value >>= 7
+    out.append(value)
+    return bytes(out)
+
+def send_message(dev, msg):
+    data = msg.SerializeToString()
+    # Prepend length as varint
+    varint_len = encode_varint(len(data))
+    payload = varint_len + data
+    
+    offset = 0
+    while offset < len(payload):
+        chunk_size = min(len(payload) - offset, 62)
+        chunk = payload[offset : offset + chunk_size]
+        
+        # Report ID (1) + Len (1) + Chunk (...)
+        report = bytearray([REPORT_ID])
+        report.append(len(chunk))
+        report.extend(chunk)
+        
+        # Pad to 64 bytes
+        padding = 64 - len(report)
+        if padding > 0:
+            report.extend(bytearray(padding))
+            
+        dev.write(report)
+        offset += chunk_size
+
 def send_simulate_input(dev, position, pressed):
     msg = usb_comm_pb2.MessageH2D()
     msg.action = usb_comm_pb2.Action.SIMULATE_INPUT
     msg.simulate_input.position = position
     msg.simulate_input.pressed = pressed
-
-    data = msg.SerializeToString()
-    
-    # Packetize (matches usb_comm_hid.c logic)
-    # Report ID (1) + Length (1) + Data (62)
-    report = bytearray([REPORT_ID]) + bytearray([len(data)]) + data + bytearray(64 - len(data) - 2)
-    
-    dev.write(report)
+    send_message(dev, msg)
 
 class LatencyTester:
     def __init__(self):

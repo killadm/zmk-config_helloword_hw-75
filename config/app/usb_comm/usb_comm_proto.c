@@ -10,6 +10,7 @@
 LOG_MODULE_DECLARE(usb_comm, CONFIG_HW75_USB_COMM_LOG_LEVEL);
 
 #include <zephyr/usb/usb_device.h>
+#include <stdlib.h>
 
 #include <pb_encode.h>
 #include <pb_decode.h>
@@ -184,7 +185,8 @@ static bool handle_otp_set_time(const usb_comm_MessageH2D *h2d, usb_comm_Message
 				const void *bytes, uint32_t bytes_len)
 {
 	totp_set_time(h2d->payload.otp_set_time.timestamp);
-	return false;
+	d2h->payload.otp_set_time.timestamp = h2d->payload.otp_set_time.timestamp;
+	return true;
 }
 
 static bool handle_otp_set_secret(const usb_comm_MessageH2D *h2d, usb_comm_MessageD2H *d2h,
@@ -192,15 +194,30 @@ static bool handle_otp_set_secret(const usb_comm_MessageH2D *h2d, usb_comm_Messa
 {
 	if (bytes_len > 0) {
 		totp_set_secret(bytes, bytes_len);
+		return true;
+	}
+	return false;
+}
+
+static bool handle_otp_get_state(const usb_comm_MessageH2D *h2d, usb_comm_MessageD2H *d2h,
+				 const void *bytes, uint32_t bytes_len)
+{
+	char buf[16];
+	if (totp_generate(buf, sizeof(buf)) == 0) {
+		d2h->payload.otp_state.code = atoi(buf);
+		// d2h->payload.otp_state.remaining = ...; // Optional
+		return true;
 	}
 	return false;
 }
 
 USB_COMM_HANDLER_DEFINE(usb_comm_Action_SIMULATE_INPUT, usb_comm_MessageD2H_nop_tag,
 			handle_simulate_input);
-USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_SET_TIME, usb_comm_MessageD2H_nop_tag,
+USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_SET_TIME, usb_comm_MessageD2H_otp_set_time_tag,
 			handle_otp_set_time);
 USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_SET_SECRET, usb_comm_MessageD2H_nop_tag,
 			handle_otp_set_secret);
+USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_GET_STATE, usb_comm_MessageD2H_otp_state_tag,
+			handle_otp_get_state);
 
 SYS_INIT(usb_comm_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
