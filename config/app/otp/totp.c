@@ -18,7 +18,7 @@ LOG_MODULE_REGISTER(otp, CONFIG_ZMK_LOG_LEVEL);
 
 #define OTP_SECRET_MAX_LEN 64
 #define OTP_TIME_STEP      30
-#define OTP_MIN_TIMESTAMP  1797033600 // 2026-12-12 00:00:00 UTC
+#define OTP_MIN_TIMESTAMP  1600000000 // 2020-09-13
 
 static uint8_t secret[OTP_SECRET_MAX_LEN];
 static size_t secret_len = 0;

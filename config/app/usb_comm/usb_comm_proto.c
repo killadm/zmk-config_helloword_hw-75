@@ -67,6 +67,9 @@ static bool h2d_callback(pb_istream_t *stream, const pb_field_t *field, void **a
 	if (field->tag == usb_comm_MessageH2D_eink_image_tag) {
 		usb_comm_EinkImage *eink_image = field->pData;
 		eink_image->bits.funcs.decode = read_bytes_field;
+	} else if (field->tag == usb_comm_MessageH2D_otp_set_secret_tag) {
+		usb_comm_OtpSetSecret *otp_set_secret = field->pData;
+		otp_set_secret->secret.funcs.decode = read_bytes_field;
 	}
 	return true;
 }
@@ -93,6 +96,8 @@ static void usb_comm_handle_message()
 	}
 
 	LOG_DBG("req action: %d", h2d.action);
+	LOG_INF("Received Action: %d, Payload Tag: %d", h2d.action, h2d.which_payload);
+
 	d2h.action = h2d.action;
 	d2h.which_payload = usb_comm_MessageD2H_nop_tag;
 
