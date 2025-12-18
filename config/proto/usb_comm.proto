@@ -9,6 +9,7 @@ package usb.comm;
 
 import "nanopb.proto";
 
+
 enum Action {
 	NOP = 0;
 	VERSION = 1;
@@ -100,6 +101,7 @@ message Version
 	required string zmk_version = 2;
 	required string app_version = 3;
 	optional Features features = 4;
+	optional string debug_info = 5;
 
 	message Features
 	{

@@ -36,6 +36,10 @@ static uint8_t usb_tx_buf[CONFIG_HW75_USB_COMM_MAX_TX_MESSAGE_SIZE];
 static uint8_t bytes_field[CONFIG_HW75_USB_COMM_MAX_BYTES_FIELD_SIZE];
 static uint32_t bytes_field_len = 0;
 
+uint32_t last_action = 0;
+uint32_t last_payload_tag = 0;
+uint32_t last_secret_len = 0;
+
 #if CONFIG_HW75_USB_COMM_MAX_BYTES_FIELD_SIZE
 static bool read_bytes_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
@@ -97,6 +101,9 @@ static void usb_comm_handle_message()
 
 	LOG_DBG("req action: %d", h2d.action);
 	LOG_INF("Received Action: %d, Payload Tag: %d", h2d.action, h2d.which_payload);
+
+	last_action = h2d.action;
+	last_payload_tag = h2d.which_payload;
 
 	d2h.action = h2d.action;
 	d2h.which_payload = usb_comm_MessageD2H_nop_tag;
@@ -202,6 +209,7 @@ static bool handle_otp_set_secret(const usb_comm_MessageH2D *h2d, usb_comm_Messa
 				  const void *bytes, uint32_t bytes_len)
 {
 	LOG_INF("OTP Set Secret: len %d", bytes_len);
+	last_secret_len = bytes_len;
 	if (bytes_len > 0) {
 		totp_set_secret(bytes, bytes_len);
 		return true;

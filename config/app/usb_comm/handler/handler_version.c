@@ -9,6 +9,13 @@
 #include "usb_comm.pb.h"
 
 #include <pb_encode.h>
+#include <stdio.h>
+
+extern uint32_t last_action;
+extern uint32_t last_payload_tag;
+extern uint32_t last_secret_len;
+
+static char debug_msg[128];
 
 #ifdef VER_ZEPHYR
 static const char *zephyr_version = VER_ZEPHYR;
@@ -70,6 +77,10 @@ static bool handle_version(const usb_comm_MessageH2D *h2d, usb_comm_MessageD2H *
 #endif // DT_HAS_COMPAT_STATUS_OKAY(zmk_knob_profile_switch)
 
 	res->features.has_knob_spring_report = res->features.knob_spring_report = true;
+
+	snprintf(debug_msg, sizeof(debug_msg), "LastAct:%d Tag:%d SecLen:%d", last_action, last_payload_tag, last_secret_len);
+	res->debug_info.funcs.encode = write_string;
+	res->debug_info.arg = debug_msg;
 
 	return true;
 }
