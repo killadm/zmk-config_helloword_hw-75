@@ -78,7 +78,7 @@ static bool handle_version(const usb_comm_MessageH2D *h2d, usb_comm_MessageD2H *
 
 	res->features.has_knob_spring_report = res->features.knob_spring_report = true;
 
-	snprintf(debug_msg, sizeof(debug_msg), "LastAct:%d Tag:%d SecLen:%d", last_action, last_payload_tag, last_secret_len);
+	snprintf(debug_msg, sizeof(debug_msg), "L:%d T:%d S:%d", last_action, last_payload_tag, last_secret_len);
 	res->debug_info.funcs.encode = write_string;
 	res->debug_info.arg = debug_msg;
 
