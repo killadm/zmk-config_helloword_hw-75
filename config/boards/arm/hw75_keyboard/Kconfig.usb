@@ -15,4 +15,8 @@ config HW75_USB_COMM_MAX_RX_MESSAGE_SIZE
 	int
 	default 64
 
+config HW75_USB_COMM_MAX_BYTES_FIELD_SIZE
+	int
+	default 64
+
 endif # HW75_USB_COMM

@@ -40,6 +40,20 @@ uint32_t last_action = 0;
 uint32_t last_payload_tag = 0;
 uint32_t last_secret_len = 0;
 
+struct bytes_arg {
+	const uint8_t *buf;
+	size_t len;
+};
+
+static bool write_bytes(pb_ostream_t *stream, const pb_field_t *field, void *const *arg)
+{
+	const struct bytes_arg *bytes = *arg;
+	if (!pb_encode_tag_for_field(stream, field)) {
+		return false;
+	}
+	return pb_encode_string(stream, bytes->buf, bytes->len);
+}
+
 #if CONFIG_HW75_USB_COMM_MAX_BYTES_FIELD_SIZE
 static bool read_bytes_field(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
@@ -83,6 +97,8 @@ static void usb_comm_handle_message()
 {
 	LOG_DBG("message size %u", usb_rx_len);
 	LOG_HEXDUMP_DBG(usb_rx_buf, MIN(usb_rx_len, 64), "message data");
+
+	bytes_field_len = 0;
 
 	pb_istream_t h2d_stream = pb_istream_from_buffer(usb_rx_buf, usb_rx_len);
 	pb_ostream_t d2h_stream = pb_ostream_from_buffer(usb_tx_buf, sizeof(usb_tx_buf));
@@ -180,6 +196,14 @@ static int usb_comm_init(const struct device *dev)
 static bool handle_simulate_input(const usb_comm_MessageH2D *h2d, usb_comm_MessageD2H *d2h,
 				  const void *bytes, uint32_t bytes_len)
 {
+	ARG_UNUSED(bytes);
+	ARG_UNUSED(bytes_len);
+
+	if (h2d->which_payload != usb_comm_MessageH2D_simulate_input_tag) {
+		LOG_ERR("SIMULATE_INPUT missing payload (tag %u)", h2d->which_payload);
+		return false;
+	}
+
 	LOG_INF("Simulating input: pos %d, state %d", h2d->payload.simulate_input.position, h2d->payload.simulate_input.pressed);
 
 	struct zmk_position_state_changed position_state_changed = {
@@ -208,10 +232,19 @@ static bool handle_otp_set_time(const usb_comm_MessageH2D *h2d, usb_comm_Message
 static bool handle_otp_set_secret(const usb_comm_MessageH2D *h2d, usb_comm_MessageD2H *d2h,
 				  const void *bytes, uint32_t bytes_len)
 {
+	if (h2d->which_payload != usb_comm_MessageH2D_otp_set_secret_tag) {
+		LOG_ERR("OTP_SET_SECRET missing payload (tag %u)", h2d->which_payload);
+		return false;
+	}
+
 	LOG_INF("OTP Set Secret: len %d", bytes_len);
 	last_secret_len = bytes_len;
 	if (bytes_len > 0) {
 		totp_set_secret(bytes, bytes_len);
+		static const uint8_t dummy = 0;
+		static const struct bytes_arg empty = {.buf = &dummy, .len = 0};
+		d2h->payload.otp_set_secret.secret.funcs.encode = write_bytes;
+		d2h->payload.otp_set_secret.secret.arg = (void *)&empty;
 		return true;
 	}
 	return false;
@@ -235,7 +268,7 @@ USB_COMM_HANDLER_DEFINE(usb_comm_Action_SIMULATE_INPUT, usb_comm_MessageD2H_simu
 			handle_simulate_input);
 USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_SET_TIME, usb_comm_MessageD2H_otp_set_time_tag,
 			handle_otp_set_time);
-USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_SET_SECRET, usb_comm_MessageD2H_nop_tag,
+USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_SET_SECRET, usb_comm_MessageD2H_otp_set_secret_tag,
 			handle_otp_set_secret);
 USB_COMM_HANDLER_DEFINE(usb_comm_Action_OTP_GET_STATE, usb_comm_MessageD2H_otp_state_tag,
 			handle_otp_get_state);
