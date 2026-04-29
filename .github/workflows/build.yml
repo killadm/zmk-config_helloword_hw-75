@@ -1,3 +1,5 @@
+name: Build
+
 on:
   push:
   pull_request:
@@ -8,9 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: zmkfirmware/zmk-build-arm:stable
+      image: zmkfirmware/zmk-build-arm:3.2
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - { board: hw75_keyboard@1.1, keymap: hw75_keyboard.keymap  }
@@ -24,19 +27,24 @@ jobs:
           echo "zephyr_version=${ZEPHYR_VERSION}" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up build tools
         run: |
           apt-get update
           apt-get install -y python3-pip protobuf-compiler curl
-          curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+          
+          curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
           apt-get install -y nodejs
+          
+          pip install --upgrade pip
+          pip install --upgrade packaging setuptools wheel
+          # 这里不再安装 nanopb 的 pip 包，避免干扰，只安装 fonttools
           pip install -U fonttools
           npm install -g lv_font_conv
 
       - name: Cache west modules
-        uses: actions/cache@v3.0.11
+        uses: actions/cache@v4
         continue-on-error: true
         env:
           cache_name: cache-zephyr-${{ env.zephyr_version }}-modules
@@ -56,8 +64,28 @@ jobs:
           west init -l config
           west update
           west zephyr-export
+          
+          # 修复 Zephyr 依赖文件中的语法错误
+          sed -i 's/clang-format>=1.13x/clang-format>=1.13/g' zephyr/scripts/requirements-extras.txt
+          
+          # 升级 pip 基础库
+          pip install --upgrade pip
+          pip install --upgrade packaging setuptools wheel
+          
+          # 安装 Zephyr 依赖 (这可能会不小心安装新版 protobuf)
           pip install -r zephyr/scripts/requirements.txt
+          
+          # === 关键修复：强制降级 protobuf ===
+          # 旧版 Nanopb 生成器不兼容 protobuf 4.x/5.x，必须降级到 3.x
+          pip install "protobuf<4.0.0"
+          
           git config --global --add safe.directory $PWD
+
+      - name: Clean stale protobuf files
+        run: |
+          echo "Removing stale generated protobuf files..."
+          find . -name "usb_comm.pb.c" -delete
+          find . -name "usb_comm.pb.h" -delete
 
       - name: West build
         run: |
@@ -79,9 +107,9 @@ jobs:
           cp build/zephyr/zmk.bin "build/artifacts/${{ matrix.board }}-zmk.bin"
 
       - name: Archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: firmware
+          name: firmware-${{ matrix.board }}
           path: build/artifacts
 
   release:
@@ -92,12 +120,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: firmware
+          pattern: firmware-*
+          merge-multiple: true
           path: firmware
 
       - name: Prepare release notes
