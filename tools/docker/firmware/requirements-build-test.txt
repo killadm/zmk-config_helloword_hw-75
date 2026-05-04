@@ -1,0 +1,7 @@
+colorama
+ply>=3.10
+gcovr>=4.2
+coverage
+pytest
+mypy
+mock>=4.0.1

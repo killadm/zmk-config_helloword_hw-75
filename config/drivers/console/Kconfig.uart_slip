@@ -18,6 +18,7 @@ config UART_SLIP_INIT_PRIORITY
 
 config UART_SLIP_RX_RING_BUFFER_SIZE
 	int
+	default 64 if BOARD_HW75_KEYBOARD
 	default 1024
 
 module = UART_SLIP

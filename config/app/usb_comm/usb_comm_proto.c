@@ -19,13 +19,19 @@ LOG_MODULE_DECLARE(usb_comm, CONFIG_HW75_USB_COMM_LOG_LEVEL);
 
 #include "handler/handler.h"
 
-static struct k_sem usb_comm_sem;
-
 static K_THREAD_STACK_DEFINE(usb_comm_thread_stack, CONFIG_HW75_USB_COMM_THREAD_STACK_SIZE);
 static struct k_thread usb_comm_thread;
 
-static uint32_t usb_rx_idx, usb_rx_len;
-static uint8_t usb_rx_buf[CONFIG_HW75_USB_COMM_MAX_RX_MESSAGE_SIZE];
+struct usb_comm_rx_message {
+	uint16_t len;
+	uint8_t data[CONFIG_HW75_USB_COMM_MAX_RX_MESSAGE_SIZE];
+};
+
+K_MSGQ_DEFINE(usb_comm_rx_msgq, sizeof(struct usb_comm_rx_message),
+	      CONFIG_HW75_USB_COMM_RX_QUEUE_SIZE, 4);
+
+static uint32_t usb_rx_idx;
+static struct usb_comm_rx_message usb_rx_current;
 static uint8_t usb_tx_buf[CONFIG_HW75_USB_COMM_MAX_TX_MESSAGE_SIZE];
 
 static uint8_t bytes_field[CONFIG_HW75_USB_COMM_MAX_BYTES_FIELD_SIZE];
@@ -63,20 +69,25 @@ static bool h2d_callback(pb_istream_t *stream, const pb_field_t *field, void **a
 		usb_comm_EinkImage *eink_image = field->pData;
 		eink_image->bits.funcs.decode = read_bytes_field;
 	}
+	if (field->tag == usb_comm_MessageH2D_keymap_page_tag) {
+		usb_comm_KeymapPage *keymap_page = field->pData;
+		keymap_page->entries.funcs.decode = read_bytes_field;
+	}
 	return true;
 }
 #endif
 
-static void usb_comm_handle_message()
+static void usb_comm_handle_message(const struct usb_comm_rx_message *rx)
 {
-	LOG_DBG("message size %u", usb_rx_len);
-	LOG_HEXDUMP_DBG(usb_rx_buf, MIN(usb_rx_len, 64), "message data");
+	LOG_DBG("message size %u", rx->len);
+	LOG_HEXDUMP_DBG(rx->data, MIN(rx->len, 64), "message data");
 
-	pb_istream_t h2d_stream = pb_istream_from_buffer(usb_rx_buf, usb_rx_len);
+	pb_istream_t h2d_stream = pb_istream_from_buffer(rx->data, rx->len);
 	pb_ostream_t d2h_stream = pb_ostream_from_buffer(usb_tx_buf, sizeof(usb_tx_buf));
 
 	usb_comm_MessageH2D h2d = usb_comm_MessageH2D_init_zero;
 	usb_comm_MessageD2H d2h = usb_comm_MessageD2H_init_zero;
+	bytes_field_len = 0;
 
 #if CONFIG_HW75_USB_COMM_MAX_BYTES_FIELD_SIZE
 	h2d.cb_payload.funcs.decode = h2d_callback;
@@ -118,7 +129,7 @@ static void usb_comm_handle_message()
 
 static void usb_comm_handle_packet(uint8_t *data, uint32_t len)
 {
-	if (usb_rx_idx + len > sizeof(usb_rx_buf)) {
+	if (usb_rx_idx + len > sizeof(usb_rx_current.data)) {
 		LOG_ERR("RX buffer overflows, index: %d, received: %d", usb_rx_idx, len);
 		usb_rx_idx = 0;
 		return;
@@ -129,30 +140,32 @@ static void usb_comm_handle_packet(uint8_t *data, uint32_t len)
 		return;
 	}
 
-	memcpy(usb_rx_buf + usb_rx_idx, data + 1, data[0]);
+	memcpy(usb_rx_current.data + usb_rx_idx, data + 1, data[0]);
 	usb_rx_idx += data[0];
 
 	if (data[0] + 1 < len) {
-		usb_rx_len = usb_rx_idx;
+		usb_rx_current.len = usb_rx_idx;
 		usb_rx_idx = 0;
-		k_sem_give(&usb_comm_sem);
+		int ret = k_msgq_put(&usb_comm_rx_msgq, &usb_rx_current, K_NO_WAIT);
+		if (ret) {
+			LOG_WRN("RX queue full, dropping message");
+		}
 	}
 }
 
 static void usb_comm_thread_entry(void *p1, void *p2, void *p3)
 {
 	usb_comm_hid_init(usb_comm_handle_packet);
+	struct usb_comm_rx_message rx;
 	while (true) {
-		k_sem_take(&usb_comm_sem, K_FOREVER);
-		usb_comm_handle_message();
+		k_msgq_get(&usb_comm_rx_msgq, &rx, K_FOREVER);
+		usb_comm_handle_message(&rx);
 	}
 }
 
 static int usb_comm_init(const struct device *dev)
 {
 	ARG_UNUSED(dev);
-
-	k_sem_init(&usb_comm_sem, 0, 1);
 
 	k_thread_create(&usb_comm_thread, usb_comm_thread_stack,
 			CONFIG_HW75_USB_COMM_THREAD_STACK_SIZE, usb_comm_thread_entry, NULL, NULL,

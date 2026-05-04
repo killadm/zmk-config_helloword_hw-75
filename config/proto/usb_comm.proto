@@ -22,6 +22,10 @@ enum Action {
 	RGB_GET_INDICATOR = 10;
 	RGB_SET_INDICATOR = 11;
 	EINK_SET_IMAGE = 7;
+	KEYMAP_INFO = 12;
+	KEYMAP_GET_PAGE = 13;
+	KEYMAP_SET_PAGE = 14;
+	KEYMAP_RESET = 15;
 }
 
 message MessageH2D
@@ -38,6 +42,8 @@ message MessageH2D
 		RgbState rgb_state = 7;
 		RgbIndicator rgb_indicator = 8;
 		EinkImage eink_image = 5;
+		KeymapPage keymap_page = 9;
+		KeymapReset keymap_reset = 10;
 	}
 }
 
@@ -54,6 +60,9 @@ message MessageD2H
 		RgbState rgb_state = 6;
 		RgbIndicator rgb_indicator = 9;
 		EinkImage eink_image = 7;
+		KeymapInfo keymap_info = 10;
+		KeymapPage keymap_page = 11;
+		KeymapStatus keymap_status = 12;
 	}
 }
 
@@ -78,6 +87,7 @@ message Version
 		optional bool knob_prefs = 4;
 		optional bool knob_profile_switch = 7;
 		optional bool knob_spring_report = 8;
+		optional bool keymap = 9;
 	}
 }
 
@@ -184,4 +194,47 @@ message EinkImage
 	optional uint32 width = 6;
 	optional uint32 height = 7;
 	optional bool partial = 8;
+}
+
+message KeymapInfo
+{
+	required uint32 layers = 1;
+	required uint32 positions = 2;
+	required uint32 page_size = 3;
+	required uint32 page_count = 4;
+	required uint32 dirty_pages = 5;
+	required uint32 profile = 6;
+}
+
+message KeymapPage
+{
+	required uint32 page = 1;
+	optional bytes entries = 2;
+}
+
+message KeymapReset
+{
+	required Scope scope = 1;
+	optional uint32 layer = 2;
+	optional uint32 position = 3;
+
+	enum Scope {
+		ALL = 0;
+		LAYER = 1;
+		KEY = 2;
+	}
+}
+
+message KeymapStatus
+{
+	required Status status = 1;
+	optional uint32 page = 2;
+	optional uint32 dirty_pages = 3;
+
+	enum Status {
+		OK = 0;
+		BUSY = 1;
+		INVALID = 2;
+		ERROR = 3;
+	}
 }

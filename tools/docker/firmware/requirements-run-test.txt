@@ -1,0 +1,4 @@
+pyserial
+pyocd>=0.29.0
+tabulate
+cbor>=1.0.0

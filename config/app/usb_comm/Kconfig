@@ -28,6 +28,10 @@ config HW75_USB_COMM_MAX_RX_MESSAGE_SIZE
 	int
 	default 512
 
+config HW75_USB_COMM_RX_QUEUE_SIZE
+	int
+	default 2
+
 config HW75_USB_COMM_MAX_BYTES_FIELD_SIZE
 	int
 	default 0
@@ -43,6 +47,9 @@ config HW75_USB_COMM_FEATURE_EINK
 	bool
 
 config HW75_USB_COMM_FEATURE_KNOB
+	bool
+
+config HW75_USB_COMM_FEATURE_KEYMAP
 	bool
 
 endif # HW75_USB_COMM

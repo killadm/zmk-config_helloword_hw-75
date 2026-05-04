@@ -25,3 +25,7 @@ zephyr_library_include_directories_ifdef(CONFIG_HW75_USB_COMM_FEATURE_RGB ${APPL
 # handler - eink
 
 zephyr_library_sources_ifdef(CONFIG_HW75_USB_COMM_FEATURE_EINK handler_eink.c)
+
+# handler - keymap
+
+zephyr_library_sources_ifdef(CONFIG_HW75_USB_COMM_FEATURE_KEYMAP handler_keymap.c)

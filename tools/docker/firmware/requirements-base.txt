@@ -1,0 +1,12 @@
+pyelftools>=0.27
+PyYAML>=5.1
+pykwalify
+canopen
+packaging
+progress
+psutil
+pylink-square
+anytree
+intelhex
+west>=0.10.1
+windows-curses; sys_platform == "win32"

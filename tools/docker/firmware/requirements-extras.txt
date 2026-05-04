@@ -1,0 +1,9 @@
+gitlint
+junit2html
+clang-format>=1.13
+lpc_checksum
+Pillow
+imgtool>=1.9
+grpcio-tools
+PyGithub
+graphviz

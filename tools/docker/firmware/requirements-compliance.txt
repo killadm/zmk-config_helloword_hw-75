@@ -1,0 +1,3 @@
+python-magic
+junitparser>=2
+pylint

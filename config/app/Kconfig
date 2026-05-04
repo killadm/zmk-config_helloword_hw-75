@@ -5,3 +5,8 @@ rsource "usb_comm/Kconfig"
 
 rsource "Kconfig.hid_mouse"
 rsource "Kconfig.indicator"
+
+config HW75_KEYMAP_REMAP
+	bool "HW75 lightweight online keymap remap"
+	depends on SETTINGS
+	default y if BOARD_HW75_KEYBOARD
